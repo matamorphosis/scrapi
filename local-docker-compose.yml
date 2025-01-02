@@ -1,0 +1,41 @@
+version: "1.0"
+services:
+  scrapi:
+    build:
+      context: ./
+      dockerfile: ScrAPI.Dockerfile
+    container_name: scrapi
+    ports:
+    - "80:80"
+    - "443:443"
+    environment:
+      POSTGRES_HOST: "10.5.0.5"
+      POSTGRES_PORT: 5432
+      POSTGRES_USER: "scrapi"
+      POSTGRES_PASSWORD: "jqMnPJ4FiObCX5wadyfOOCcAIyR9Rd8JE0njKJrlnbFHPwikeRJGG2lJM1HbFjcQ"
+      POSTGRES_DB: "scrapi"
+    networks:
+      vpcbr:
+        ipv4_address: 10.5.0.6
+  postgres:
+    build:
+      context: ./
+      dockerfile: Postgres.Dockerfile
+    container_name: postgres
+    ports:
+    - "5432:5432"
+    environment:
+      POSTGRES_USER: "scrapi"
+      POSTGRES_PASSWORD: "jqMnPJ4FiObCX5wadyfOOCcAIyR9Rd8JE0njKJrlnbFHPwikeRJGG2lJM1HbFjcQ"
+      POSTGRES_DB: "scrapi"
+    networks:
+      vpcbr:
+        ipv4_address: 10.5.0.5
+
+networks:
+  vpcbr:
+    driver: bridge
+    ipam:
+     config:
+       - subnet: 10.5.0.0/16
+         gateway: 10.5.0.1

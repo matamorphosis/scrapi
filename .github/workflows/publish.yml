@@ -1,0 +1,20 @@
+name: publish
+
+on: [push]
+
+jobs:
+  publish-scrapi-image:
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v3
+
+    - name: Build the ScrAPI Docker images
+      run: |
+        echo $CR_PAT | docker login ghcr.io -u matamorphosis --password-stdin
+        docker build -f Postgres.Dockerfile . --tag ghcr.io/matamorphosis/scrapi-database:latest
+        docker build -f ScrAPI.Dockerfile . --tag ghcr.io/matamorphosis/scrapi:latest
+        docker push ghcr.io/matamorphosis/scrapi-database:latest
+        docker push ghcr.io/matamorphosis/scrapi:latest
+      env:
+        CR_PAT: ${{ secrets.CR_PAT }}

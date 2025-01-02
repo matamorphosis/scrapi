@@ -1,0 +1,156 @@
+package scrapi_test
+
+import (
+	"bytes"
+	"encoding/json"
+	"errors"
+	"fmt"
+	"io"
+	"net/http"
+	"scrapi/scrapi"
+	"strconv"
+	"strings"
+	"testing"
+)
+
+type TestingTracker struct {
+	TeamResponses map[string]*scrapi.TeamResponse
+	AuthResponses map[string]*scrapi.AuthResponse
+}
+
+func (tr *TestingTracker) AuthenticateUser(username string, password string, mfa_guess int, finished chan bool) {
+	// Start Server
+	var buffer bytes.Buffer
+	var response scrapi.AuthResponse
+	mfa := strconv.Itoa(mfa_guess)
+
+	// New team request payload
+	var user_request scrapi.UserRequest
+	user_request.Body.Username = username
+	user_request.Body.Password = password
+	user_request.Body.MFA = strings.Repeat("0", 4-len(mfa)) + mfa
+
+	// Marshal the payload
+	json.NewEncoder(&buffer).Encode(&user_request)
+
+	// Construct API URI.
+	uri := "http://localhost/status/api/login"
+
+	// Construct the request
+	req, _ := http.NewRequest("POST", uri, nil)
+	req.Header.Add("accept", "application/json")
+
+	// Send the request
+	resp, err := http.DefaultClient.Do(req)
+	if err != nil {
+		fmt.Println(err)
+	}
+	if resp.StatusCode != http.StatusOK {
+		fmt.Println(errors.New("Failed to authenticate user."))
+	}
+	defer resp.Body.Close()
+
+	// Convert response body to bytes
+	body, err := io.ReadAll(resp.Body)
+	if err != nil {
+		fmt.Println(err)
+	}
+	err = json.Unmarshal(body, &response)
+	if err != nil {
+		fmt.Println(err)
+	}
+	tr.AuthResponses[username] = &response
+	finished <- true
+}
+
+func (tr *TestingTracker) TeamCreate(id int, finished chan bool) {
+	// Start Server
+	var buffer bytes.Buffer
+	var response scrapi.TeamResponse
+
+	// New team request payload
+	var team_request scrapi.TeamRequest
+	team_request.Body.Teamname = "test_team_" + strconv.Itoa(id)
+
+	// Marshal the payload
+	json.NewEncoder(&buffer).Encode(&team_request)
+
+	// Construct API URI.
+	uri := "http://localhost/status/api/team/new"
+
+	// Construct the request
+	req, _ := http.NewRequest("POST", uri, nil)
+	req.Header.Add("accept", "application/json")
+
+	// Send the request
+	resp, err := http.DefaultClient.Do(req)
+	if err != nil {
+		fmt.Println(err)
+	}
+	if resp.StatusCode != http.StatusOK {
+		fmt.Println(errors.New("Failed to create team"))
+	}
+	defer resp.Body.Close()
+
+	// Convert response body to bytes
+	body, err := io.ReadAll(resp.Body)
+	if err != nil {
+		fmt.Println(err)
+	}
+	err = json.Unmarshal(body, &response)
+	if err != nil {
+		fmt.Println(err)
+	}
+	tr.TeamResponses[response.Body.Username] = &response
+	finished <- true
+}
+
+func LoadTest(t *testing.T) {
+	var ScrapiImpl scrapi.ScrapiImpl
+	var Tracker TestingTracker
+	ScrapiImpl.Start()
+	number_of_runs := 10
+	finished := make(chan bool, number_of_runs)
+
+	// Create 10 teams simeoultaneously
+	for i := 0; i < number_of_runs; i++ {
+		// Download each returned chunk of vulnerabilities
+		go Tracker.TeamCreate(i, finished)
+	}
+
+	for i := 0; i < number_of_runs; i++ {
+		<-finished
+	}
+
+	if len(Tracker.TeamResponses) == 0 {
+		t.Error("Failed to retrieve any team responses.")
+	}
+
+	// Get the first response
+	var Username string
+	first_element_only := true
+
+	for Resp_K, _ := range Tracker.TeamResponses {
+		if first_element_only {
+			Username = Resp_K
+			break
+		}
+	}
+	Username_Chars := []rune(Username)
+	var Reverse_Chars []string
+	for i := (len(Username_Chars) - 1); i >= 0; i-- {
+		Reverse_Chars = append(Reverse_Chars, string(Username_Chars[i]))
+	}
+	Password := strings.Join(Reverse_Chars, "")
+	finished = make(chan bool, 99)
+
+	// Bruteforce user MFA.
+	for i := 10; i < 99; i++ {
+		// Download each returned chunk of vulnerabilities
+		go Tracker.AuthenticateUser(Username, Password, i, finished)
+	}
+
+	for i := 0; i < 99; i++ {
+		<-finished
+	}
+}

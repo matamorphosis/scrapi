@@ -1,0 +1,439 @@
+consumes:
+    - application/json
+definitions:
+    GetRankingsResponseBody:
+        properties:
+            team_id:
+                description: |-
+                    Team identifier
+                    type: int
+                format: int64
+                type: integer
+                x-go-name: Team_ID
+            team_name:
+                description: |-
+                    Team name
+                    type: string
+                type: string
+                x-go-name: Teamname
+            team_points:
+                description: |-
+                    Team flag points
+                    type: int
+                format: int64
+                type: integer
+                x-go-name: FlagPoints
+        type: object
+        x-go-package: scrapi/scrapi/core/structs
+    GetTeamFlagsResponseBody:
+        properties:
+            flag:
+                type: string
+                x-go-name: Flag
+            flag_id:
+                format: int64
+                type: integer
+                x-go-name: Flag_ID
+        type: object
+        x-go-package: scrapi/scrapi/core/structs
+info:
+    description: '# This is an API-driven CTF for security researchers and students'
+    license:
+        name: GPL-3.0
+        url: https://opensource.org/licenses/GPL-3.0
+    title: ScrAPI
+    version: "1"
+paths:
+    /api/login:
+        post:
+            description: Authenticate to the API
+            operationId: AuthRequest
+            parameters:
+                - description: 'Authentication request body (Note for Dev Environment: The password field can be substituted with the passhash field. The value of this field is the password hash of the user, which can be used in the event a password is forgotten, to avoid the hassle of rotating keys.) MFA tokens are 4 digits in length.'
+                  in: body
+                  name: Body
+                  schema:
+                    properties:
+                        mfa:
+                            description: |-
+                                name: mfa
+                                type: string
+                            type: string
+                            x-go-name: MFA
+                        passhash:
+                            type: string
+                            x-go-name: PasswordHash
+                        password:
+                            description: |-
+                                name: password
+                                type: string
+                            type: string
+                            x-go-name: Password
+                        username:
+                            description: |-
+                                name: username
+                                type: string
+                            type: string
+                            x-go-name: Username
+                    required:
+                        - username
+                        - password
+                        - mfa
+                    type: object
+            responses:
+                "200":
+                    $ref: '#/responses/AuthResponse'
+                "400":
+                    $ref: '#/responses/CommonMessage'
+                "500":
+                    $ref: '#/responses/CommonMessage'
+            tags:
+                - Authenticate
+    /api/rankings:
+        get:
+            description: Get Rankings
+            operationId: GetRankings
+            responses:
+                "200":
+                    $ref: '#/responses/GetRankingsResponse'
+                "400":
+                    $ref: '#/responses/CommonMessage'
+                "401":
+                    $ref: '#/responses/CommonMessage'
+                "500":
+                    $ref: '#/responses/CommonMessage'
+            tags:
+                - TeamManagement
+    /api/team/flag/{id}/categorise:
+        post:
+            description: Categorise CTF Team Flags for Extra Points
+            operationId: FlagCategorisationRequest
+            parameters:
+                - description: JWT Authorization Token
+                  in: header
+                  name: Authorization
+                  type: string
+                - description: ID of a flag
+                  in: path
+                  name: id
+                  required: true
+                  type: string
+                  x-go-name: ID
+                - description: Flag Categorisation Request Body
+                  in: body
+                  name: Body
+                  schema:
+                    properties:
+                        category:
+                            description: |-
+                                name: category
+                                type: string
+                            type: string
+                            x-go-name: Category
+                        flag:
+                            description: |-
+                                name: flag
+                                type: string
+                            type: string
+                            x-go-name: Flag
+                    required:
+                        - flag
+                        - category
+                    type: object
+            responses:
+                "200":
+                    $ref: '#/responses/FlagCategorisationResponse'
+                "400":
+                    $ref: '#/responses/CommonMessage'
+                "401":
+                    $ref: '#/responses/CommonMessage'
+                "406":
+                    $ref: '#/responses/FlagCategoriseMessage'
+                "500":
+                    $ref: '#/responses/CommonMessage'
+            tags:
+                - TeamManagement
+    /api/team/flags:
+        get:
+            description: Get CTF Team Flags
+            operationId: GetTeamFlagsRequest
+            parameters:
+                - description: JWT Authorization Token
+                  in: header
+                  name: Authorization
+                  type: string
+            responses:
+                "200":
+                    $ref: '#/responses/GetTeamFlagsResponse'
+                "400":
+                    $ref: '#/responses/CommonMessage'
+                "401":
+                    $ref: '#/responses/CommonMessage'
+                "500":
+                    $ref: '#/responses/CommonMessage'
+            tags:
+                - TeamManagement
+    /api/team/new:
+        post:
+            description: Create a new CTF Team
+            operationId: NewTeamRequest
+            parameters:
+                - in: body
+                  name: Body
+                  schema:
+                    properties:
+                        team_name:
+                            description: |-
+                                name: team_name
+                                type: string
+                            type: string
+                            x-go-name: Teamname
+                    required:
+                        - team_name
+                    type: object
+            responses:
+                "200":
+                    $ref: '#/responses/NewTeamResponse'
+                "400":
+                    $ref: '#/responses/CommonMessage'
+                "500":
+                    $ref: '#/responses/CommonMessage'
+            tags:
+                - TeamManagement
+    /api/user/{id}/details:
+        get:
+            description: Get User Details
+            operationId: GetUserDetailsRequest
+            parameters:
+                - description: JWT Authorization Token
+                  in: header
+                  name: Authorization
+                  type: string
+                - description: ID of a user
+                  in: path
+                  name: id
+                  required: true
+                  type: string
+                  x-go-name: ID
+            responses:
+                "200":
+                    $ref: '#/responses/GetUserDetailsResponse'
+                "400":
+                    $ref: '#/responses/CommonMessage'
+                "401":
+                    $ref: '#/responses/CommonMessage'
+                "500":
+                    $ref: '#/responses/CommonMessage'
+            tags:
+                - UserManagement
+    /api/user/files/{filename}:
+        get:
+            description: Get User Files
+            operationId: GetUserFilesRequest
+            parameters:
+                - description: JWT Authorization Token
+                  in: header
+                  name: Authorization
+                  type: string
+                - description: Filename
+                  in: path
+                  name: filename
+                  required: true
+                  type: string
+                  x-go-name: Filename
+            responses:
+                "200":
+                    $ref: '#/responses/GetUserFilesResponse'
+                "400":
+                    $ref: '#/responses/CommonMessage'
+                "401":
+                    $ref: '#/responses/CommonMessage'
+                "500":
+                    $ref: '#/responses/CommonMessage'
+            tags:
+                - UserManagement
+produces:
+    - application/json
+responses:
+    AuthResponse:
+        description: Authentication response
+        schema:
+            properties:
+                flag:
+                    description: "Flag\t\t// type: string"
+                    type: string
+                    x-go-name: Flag
+                message:
+                    description: |-
+                        Message
+                        type: string
+                    type: string
+                    x-go-name: Message
+                token:
+                    description: |-
+                        JWT Token
+                        type: string
+                    type: string
+                    x-go-name: Token
+            type: object
+    CommonMessage:
+        description: Common error message
+        schema:
+            properties:
+                message:
+                    description: |-
+                        Error message
+                        type: string
+                    type: string
+                    x-go-name: Message
+            type: object
+    FlagCategorisationResponse:
+        description: Flag categorisation response
+        schema:
+            properties:
+                team_id:
+                    description: |-
+                        name: team_id
+                        type: int
+                    format: int64
+                    type: integer
+                    x-go-name: TeamID
+                team_name:
+                    description: |-
+                        name: team_name
+                        type: string
+                    type: string
+                    x-go-name: TeamName
+                team_points_added:
+                    description: |-
+                        name: flag_points_new
+                        type: int
+                    format: int64
+                    type: integer
+                    x-go-name: FlagPointsAwarded
+                team_points_total:
+                    description: |-
+                        name: flag_points_total
+                        type: int
+                    format: int64
+                    type: integer
+                    x-go-name: FlagPoints
+            required:
+                - team_id
+                - team_name
+                - team_points_total
+                - team_points_added
+            type: object
+    FlagCategoriseMessage:
+        description: Flag categorisation error message
+        schema:
+            properties:
+                message:
+                    description: |-
+                        Error message
+                        type: string
+                    type: string
+                    x-go-name: Message
+                valid_categories:
+                    description: |-
+                        Error message
+                        type: array
+                    items:
+                        type: string
+                    type: array
+                    x-go-name: ValidCategories
+            type: object
+    GetRankingsResponse:
+        description: Team rankings response
+        schema:
+            items:
+                $ref: '#/definitions/GetRankingsResponseBody'
+            type: array
+    GetTeamFlagsResponse:
+        description: Team flags response
+        schema:
+            items:
+                $ref: '#/definitions/GetTeamFlagsResponseBody'
+            type: array
+    GetUserDetailsResponse:
+        description: User details response
+        schema:
+            properties:
+                first_name:
+                    description: |-
+                        First Name
+                        type: string
+                    type: string
+                    x-go-name: FirstName
+                flag:
+                    type: string
+                    x-go-name: Flag
+                last_name:
+                    description: |-
+                        Last Name
+                        type: string
+                    type: string
+                    x-go-name: LastName
+                mfa:
+                    description: MFA
+                    maximum: 4
+                    minimum: 4
+                    type: string
+                    x-go-name: MFA
+                passhash:
+                    type: string
+                    x-go-name: PasswordHash
+                role:
+                    description: |-
+                        Role
+                        type: string
+                    type: string
+                    x-go-name: Role
+                user_id:
+                    description: |-
+                        User identifier
+                        type: int
+                    format: int64
+                    type: integer
+                    x-go-name: User_ID
+                username:
+                    description: |-
+                        Username
+                        type: string
+                    type: string
+                    x-go-name: Username
+            type: object
+    GetUserFilesResponse:
+        description: User files response
+        schema:
+            properties:
+                files:
+                    description: |-
+                        List of files
+                        type: array
+                    items:
+                        type: string
+                    type: array
+                    x-go-name: Files
+            type: object
+    NewTeamResponse:
+        description: New team response
+        schema:
+            properties:
+                ctf_user:
+                    type: string
+                    x-go-name: Username
+                message:
+                    type: string
+                    x-go-name: Message
+                team_id:
+                    format: int64
+                    type: integer
+                    x-go-name: Team_ID
+                team_name:
+                    type: string
+                    x-go-name: Teamname
+            type: object
+schemes:
+    - https
+swagger: "2.0"
