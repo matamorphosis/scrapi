@@ -1,6 +1,7 @@
 FROM golang:1.23
 
-RUN mkdir -p /app
+RUN mkdir -p /app/certs
+RUN mkdir -p /app/teamfiles
 RUN mkdir -p /var/log
 WORKDIR /app
 
